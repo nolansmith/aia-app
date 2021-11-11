@@ -1,0 +1,131 @@
+version: "3.5"
+
+services:
+  nginx:
+    image: nginx:1.21.3-alpine
+    container_name: ask-it-nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - postgres
+      - fe-app
+      - auth-service
+      - graphql-service
+    command: [nginx-debug, "-g", "daemon off;"]
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      aia_net:
+        ipv4_address: ${NGINX_IP}
+
+  postgres:
+    container_name: ask-it-db
+    image: postgres:13-alpine
+    environment:
+      - POSTGRES_USER=${SQL_USERNAME}
+      - POSTGRES_PASSWORD=${SQL_PASSWORD}
+      - POSTGRES_DB=${SQL_DB}
+    ports:
+      - "5432:5432"
+    networks:
+      aia_net:
+        ipv4_address: ${POSTGRES_IP}
+    restart: unless-stopped
+
+  fe-app:
+    image: node:14-slim
+    container_name: ask-it-fe-app
+    working_dir: /home/node/app
+    command: ./start-dev.sh
+    volumes:
+      - ./aia-fe-app:/home/node/app
+    # ports:
+    #   - "3000:3000"
+    depends_on:
+      - auth-service
+    environment:
+      - REACT_APP_API_SERVER=/api
+    networks:
+      aia_net:
+        ipv4_address: ${FE_APP_IP}
+
+  graphql-service:
+    image: node:14-slim
+    container_name: ask-it-gql-service
+    working_dir: /home/node/app
+    command: ./start-dev.sh
+    volumes:
+      - ./aia-graphql-service:/home/node/app
+    # ports:
+    #   - "3400:3000"
+    depends_on:
+      - postgres
+    environment:
+      - SQL_USERNAME=${SQL_USERNAME}
+      - SQL_PASSWORD=${SQL_PASSWORD}
+      - SQL_HOST=${SQL_HOST}
+      - SQL_PORT=${SQL_PORT}
+      - SQL_DIALECT="postgres"
+      - SQL_DB=${SQL_DB}
+      - PORT=${GRAPHQL_PORT}
+      - JWT_SECRET=${JWT_SECRET}
+
+    networks:
+      aia_net:
+        ipv4_address: ${GQL_SERVER_IP}
+
+  auth-service:
+    image: node:14-slim
+    container_name: ask-it-auth-service
+    working_dir: /home/node/app
+    command: ./start-dev.sh
+    volumes:
+      - ./aia-auth-service:/home/node/app
+    # ports:
+    #   - "3400:3000"
+    depends_on:
+      - postgres
+      - redis-service
+    environment:
+      - SQL_USERNAME=${SQL_USERNAME}
+      - SQL_PASSWORD=${SQL_PASSWORD}
+      - SQL_HOST=${SQL_HOST}
+      - SQL_PORT=${SQL_PORT}
+      - SQL_DIALECT="postgres"
+      - SQL_DB=${SQL_DB}
+      - PORT=${PORT}
+      - HTTPS=${HTTPS}
+      - IS_ALSO_GRAPHQL=${IS_ALSO_GRAPHQL}
+      - SERVER_SESSION_COOKIE=${SERVER_SESSION_COOKIE}
+      - SERVER_SESSION=${SERVER_SESSION}
+      - JWT_SECRET=${JWT_SECRET}
+      - REDIS_HOST=${REDIS_SERVER_IP}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+
+    networks:
+      aia_net:
+        ipv4_address: ${AUTH_SERVER_IP}
+
+  redis-service:
+    image: redis:6.2-alpine
+    container_name: ask-it-redis-service
+    # working_dir: /home/node/app
+    # command: ./start-dev.sh
+    volumes:
+      - ./aia-redis-service/data:/data
+      - ./aia-redis-service/redis.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - "${REDIS_PORT}:6379"
+    depends_on:
+      - postgres
+    networks:
+      aia_net:
+        ipv4_address: ${REDIS_SERVER_IP}
+
+networks:
+  aia_net:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.36.1.0/24

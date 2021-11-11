@@ -1,0 +1,97 @@
+version: "3.5"
+
+services:
+  nginx:
+    container_name: ask-it-nginx
+    ports:
+      - "80:80"
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+      - fe-app
+      - auth-service
+    command: [nginx-debug, "-g", "daemon off;"]
+    networks:
+      prod_net:
+        ipv4_address: ${NGINX_IP}
+
+  postgres:
+    container_name: ask-it-db
+    image: postgres:13-alpine
+    environment:
+      - POSTGRES_USER=${SQL_USERNAME}
+      - POSTGRES_PASSWORD=${SQL_PASSWORD}
+      - POSTGRES_DB=${SQL_DB}
+    ports:
+      - "5432:5432"
+    networks:
+      prod_net:
+        ipv4_address: ${POSTGRES_IP}
+    restart: unless-stopped
+
+  fe-app:
+    container_name: ask-it-fe-app
+    build:
+      context: ./aia-fe-app
+      dockerfile: Dockerfile
+    depends_on:
+      - auth-service
+    environment:
+      - REACT_APP_API_SERVER=/api
+    networks:
+      prod_net:
+        ipv4_address: ${FE_APP_IP}
+
+  graphql-service:
+    container_name: ask-it-gql-service
+    build:
+      context: ./aia-graphql-service
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+    environment:
+      - SQL_USERNAME=${SQL_USERNAME}
+      - SQL_PASSWORD=${SQL_PASSWORD}
+      - SQL_HOST=${SQL_HOST}
+      - SQL_PORT=${SQL_PORT}
+      - SQL_DIALECT="postgres"
+      - SQL_DB=${SQL_DB}
+      - PORT=${GRAPHQL_PORT}
+      - JWT_SECRET=${JWT_SECRET}
+    networks:
+      prod_net:
+        ipv4_address: ${GQL_SERVER_IP}
+
+  auth-service:
+    container_name: ask-it-auth-service
+    build:
+      context: ./aia-auth-service
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+    environment:
+      - SQL_USERNAME=${SQL_USERNAME}
+      - SQL_PASSWORD=${SQL_PASSWORD}
+      - SQL_HOST=${SQL_HOST}
+      - SQL_PORT=${SQL_PORT}
+      - SQL_DIALECT="postgres"
+      - SQL_DB=${SQL_DB}
+      - PORT=${PORT}
+      - HTTPS=${HTTPS}
+      - IS_ALSO_GRAPHQL=${IS_ALSO_GRAPHQL}
+      - SERVER_SESSION_COOKIE=${SERVER_SESSION_COOKIE}
+      - SERVER_SESSION=${SERVER_SESSION}
+      - JWT_SECRET=${JWT_SECRET}
+
+    networks:
+      prod_net:
+        ipv4_address: ${API_SERVER_IP}
+
+networks:
+  prod_net:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.36.1.0/24

@@ -1,0 +1,15 @@
+[submodule "aia-auth-service"]
+	path = aia-auth-service
+	url = git@github.com:nolansmith/aia-auth-service.git
+[submodule "aia-fe-app"]
+	path = aia-fe-app
+	url = git@github.com:nolansmith/aia-fe-app.git
+[submodule "aia-graphql-service"]
+	path = aia-graphql-service
+	url = git@github.com:nolansmith/aia-graphql-service.git
+[submodule "aia-redis-service"]
+	path = aia-redis-service
+	url = git@github.com:nolansmith/aia-redis-service.git
+[submodule "aia-db-lib"]
+	path = aia-db-lib
+	url = git@github.com:nolansmith/aia-db-lib.git
