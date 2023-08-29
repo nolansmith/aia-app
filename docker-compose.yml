@@ -64,6 +64,26 @@ services:
       prod_net:
         ipv4_address: ${GQL_SERVER_IP}
 
+  token-service:
+    image: node:14-slim
+    container_name: ask-it-token-service
+    working_dir: /home/node/app
+    command: ./start-prod.sh
+    volumes:
+      - ./aia-token-service:/home/node/app
+    depends_on:
+      - postgres
+    environment:
+      - SQL_USERNAME=${SQL_USERNAME}
+      - SQL_PASSWORD=${SQL_PASSWORD}
+      - SQL_HOST=${SQL_HOST}
+      - SQL_PORT=${SQL_PORT}
+      - SQL_DIALECT="postgres"
+      - SQL_DB=${SQL_DB}
+    networks:
+      aia_net:
+        ipv4_address: ${TOKEN_SERVICE_IP}
+
   auth-service:
     container_name: ask-it-auth-service
     build:

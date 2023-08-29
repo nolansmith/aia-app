@@ -13,3 +13,6 @@
 [submodule "aia-db-lib"]
 	path = aia-db-lib
 	url = git@github.com:nolansmith/aia-db-lib.git
+[submodule "aia-token-service"]
+	path = aia-token-service
+	url = git@github.com:nolansmith/aia-token-service.git

@@ -56,8 +56,6 @@ services:
     command: ./start-dev.sh
     volumes:
       - ./aia-graphql-service:/home/node/app
-    # ports:
-    #   - "3400:3000"
     depends_on:
       - postgres
     environment:
@@ -74,6 +72,26 @@ services:
       aia_net:
         ipv4_address: ${GQL_SERVER_IP}
 
+  token-service:
+    image: python:3.8
+    container_name: ask-it-token-service
+    working_dir: /home/node/app
+    command: ./start-dev.sh
+    volumes:
+      - ./aia-token-service:/home/node/app
+    depends_on:
+      - postgres
+    environment:
+      - SQL_USERNAME=${SQL_USERNAME}
+      - SQL_PASSWORD=${SQL_PASSWORD}
+      - SQL_HOST=${SQL_HOST}
+      - SQL_PORT=${SQL_PORT}
+      - SQL_DIALECT="postgres"
+      - SQL_DB=${SQL_DB}
+    networks:
+      aia_net:
+        ipv4_address: ${TOKEN_SERVICE_IP}
+
   auth-service:
     image: node:14-slim
     container_name: ask-it-auth-service
@@ -81,8 +99,6 @@ services:
     command: ./start-dev.sh
     volumes:
       - ./aia-auth-service:/home/node/app
-    # ports:
-    #   - "3400:3000"
     depends_on:
       - postgres
       - redis-service
